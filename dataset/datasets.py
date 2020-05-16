@@ -137,11 +137,6 @@ def rotate(img, annotation, alpha=30):
     return img_rotated_by_alpha, new_annotation
 
 
-
-
-
-
-
 class WLFWDatasets(data.Dataset):
     def __init__(self, file_list, transforms=None):
         self.line = None
@@ -156,23 +151,37 @@ class WLFWDatasets(data.Dataset):
         
     def __getitem__(self, index):
         self.line = self.lines[index].strip().split()
-        self.img = cv2.imread(self.line[0])
+        self.img_name = self.line[0]
+        self.img = cv2.imread(self.img_name)
         self.landmark = np.asarray(self.line[1:197], dtype=np.float32)
         self.attribute = np.asarray(self.line[197:203], dtype=np.int32)
         self.euler_angle = np.asarray(self.line[203:206], dtype=np.float32)
         if self.transforms:
             self.img = self.transforms(self.img)
-        return (self.img, self.landmark, self.attribute, self.euler_angle)
+        # return (self.img_name, self.img, self.landmark, self.attribute, self.euler_angle)
+        return (self.img, self.euler_angle)
 
     def __len__(self):
         return len(self.lines)
 
+
 if __name__ == '__main__':
     file_list = './data/test_data/list.txt'
     wlfwdataset = WLFWDatasets(file_list)
-    dataloader = DataLoader(wlfwdataset, batch_size=256, shuffle=True, num_workers=0, drop_last=False)
-    for img, landmark, attribute, euler_angle in dataloader:
+    dataloader = DataLoader(wlfwdataset, batch_size=256, shuffle=False, num_workers=0, drop_last=False)
+    for img, euler_angle in dataloader:
         print("img shape", img.shape)
-        print("landmark size", landmark.size())
-        print("attrbute size", attribute)
         print("euler_angle", euler_angle.size())
+        print(f'angle itself {euler_angle}')
+
+# if __name__ == '__main__':
+#     file_list = './data/test_data/list.txt'
+#     wlfwdataset = WLFWDatasets(file_list)
+#     dataloader = DataLoader(wlfwdataset, batch_size=256, shuffle=False, num_workers=0, drop_last=False)
+#     for img_name, img, landmark, attribute, euler_angle in dataloader:
+#         print('img name', img_name)
+#         print("img shape", img.shape)
+#         # print("landmark size", landmark.size())
+#         # print("attrbute size", attribute)
+#         print("euler_angle", euler_angle.size())
+#         print(f'angle itself {euler_angle}')
