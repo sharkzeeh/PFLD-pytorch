@@ -2,11 +2,9 @@ import requests
 import os
 
 
-os.chdir('data')
-WFLW_FOLDER = 'WFLW'
+WFLW_FOLDER = 'data/WFLW'
 if not os.path.exists(WFLW_FOLDER):
-    os.makedir(WFLW_FOLDER)
-os.chdir('..')
+    os.makedirs(WFLW_FOLDER)
 
 
 
