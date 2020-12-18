@@ -5,6 +5,7 @@ sys.path.append('..')
 
 from torch.utils import data
 from torch.utils.data import DataLoader
+from scipy.spatial.transform import Rotation
 
 def flip(img, annotation):
     # parse
@@ -145,6 +146,7 @@ class WLFWDatasets(data.Dataset):
         self.attribute = None
         self.filenames = None
         self.euler_angle = None
+        self.quaternion = None
         self.transforms = transforms
         with open(file_list, 'r') as f:
             self.lines = f.readlines()
@@ -156,10 +158,11 @@ class WLFWDatasets(data.Dataset):
         self.landmark = np.asarray(self.line[1:197], dtype=np.float32)
         self.attribute = np.asarray(self.line[197:203], dtype=np.int32)
         self.euler_angle = np.asarray(self.line[203:206], dtype=np.float32)
+        self.quaternion = Rotation.from_euler('xyz', self.euler_angle, degrees=True).as_quat()
         if self.transforms:
             self.img = self.transforms(self.img)
         # return (self.img_name, self.img, self.landmark, self.attribute, self.euler_angle)
-        return (self.img, self.euler_angle)
+        return (self.img, self.quaternion)
 
     def __len__(self):
         return len(self.lines)
