@@ -146,7 +146,12 @@ def detect(opt=opt, save_img=True):
                 if dataset.mode == 'images':
                     pad = 20
                     # choose the rightmost box - that will be the driver (if you aren't driving Nissan R34 or smth)
-                    x1, y1, x2, y2  = max(persons, key=lambda item: item[2]) 
+                    try:
+                        x1, y1, x2, y2  = max(persons, key=lambda item: item[2])
+                    except ValueError:
+                        print(f'No frame found for image: {path} - deleting the image ...')
+                        os.remove(path)
+                        break
 
                     c_pad = lambda c1, c2: int((c2 - c1) * 0.25)
                     x_pad = c_pad(x1, x2)
