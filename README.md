@@ -2,6 +2,17 @@
 
 Implementation of  PFLD A Practical Facial Landmark Detector by pytorch.
 
+
+### Getting started
+
+1. Change cwd to the main folder of the project
+2. Run `python3 get_euler_angles.py` with a source image:
+    * `--source https://` (you can give a web link to the image)
+    * `--source /path/to/file/image.jpg` (single image file)
+    * `--source some/dir` (directory with images)
+    * default source will locate images in `./data/samples/`
+3. Watch command line to get the euler angles
+
 #### install requirements
 
 ~~~shell
