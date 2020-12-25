@@ -11,6 +11,7 @@ import os
 from scipy.spatial.transform import Rotation
 import detect
 import shutil
+from plot_euler_angles import plot_euler_angles
 
 opt = None
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,8 +56,9 @@ def run_inference(opt=opt):
             output = model(input_batch)
 
         out = output[0]
-        eulers = quat_to_euler(out)
-        print(f"Image: {img.split('/')[-1]} has the following angles:\n Pitch: {eulers[0]:.2f}; Yaw: {eulers[1]:.2f}; Roll: {eulers[2]:.2f}\n")
+        pitch, yaw, roll = quat_to_euler(out)
+        print(f"Image: {img.split('/')[-1]} has the following angles:\n Pitch: {pitch:.2f}; Yaw: {yaw:.2f}; Roll: {roll:.2f}\n")
+        plot_euler_angles(pitch, yaw, roll, img)
 
 
 if __name__ == '__main__':
