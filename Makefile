@@ -1,14 +1,15 @@
 MAKEFLAGS = --silent --ignore-errors --no-print-directory
-.PHONY: start stop build clean healthcheck imageclean push
+.PHONY: start stop build clean healthcheck imageclean push ABC
+
+healthcheck: ./healthchecker.sh
+	./healthchecker.sh
 
 build: healthcheck Dockerfile
 	docker build . --tag sharkzeeh/face:v1
 
-healthcheck: ./healthcheker.sh
-	./healthcheker.sh
-
 start: build
-	docker run  --rm -it --name face sharkzeeh/face:v1 /bin/sh -c '/bin/bash; cd PFLD-pytorch'
+	xhost +
+	docker run -it --name face --net=host --env="DISPLAY" sharkzeeh/face:v1 /bin/bash
 
 stop:
 	docker stop face
