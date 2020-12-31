@@ -48,8 +48,8 @@ def vec_to_line(vector=None):
     return x, y, z
 
 def plot_euler_angles(pitch, yaw, roll, path_to_image):
-    # Set up a figure twice as tall as it is wide
-    fig = plt.figure(figsize=plt.figaspect(2.))
+    # Set up a figure
+    fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(2, 1, 2, projection='3d')
 
     # Get current rotation angle
