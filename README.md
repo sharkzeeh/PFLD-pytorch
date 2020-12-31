@@ -1,19 +1,33 @@
-# PFLD-pytorch
+# Face rotation evaluation
 
-Implementation of  PFLD A Practical Facial Landmark Detector by pytorch.
+Implementation of the euler angles estimation via `PFLD` for faces cropped by the object detection model named `yolov3`.
+## Getting started guide
 
-
-### Getting started
-
-1. Change cwd to the main folder of the project
-2. Run `python3 get_euler_angles.py` with a source image:
+0. Change cwd to the main folder of the project
+1. Run `python3 get_euler_angles.py` with a source image:
     * `--source https://` (you can give a web link to the image)
     * `--source /path/to/file/image.jpg` (single image file)
     * `--source some/dir` (directory with images)
     * default source will locate images in `./data/samples/`
-3. Watch command line to get the euler angles
+2. Watch command line to get the euler angles
 
-#### install requirements
+### Docker container
+
+To build your own docker container do as follows in your Unix terminal:
+0. `make build` - this will only build the container
+1. `make start` - this will build and start your  newly built docker container
+2. `python3 get_euler_angles.py --source ./data/samples/driver.jpg` - type it inside docker container terminal to see the cropped image and the corresponding euler angles
+3. For a custom web image please refer to point 1 in `Getting started guide`
+4. To see the results for a batch of images please also refer to point 1 in `Getting started guide`
+
+Optionally, you can download a prebuilt docker container from Dockerhub via the link:
+
+~~~shell
+docker pull sharkzeeh/face:v1
+~~~
+and then do the same steps
+
+#### Install requirements
 
 ~~~shell
 pip3 install -r requirements.txt
@@ -21,84 +35,8 @@ pip3 install -r requirements.txt
 
 #### Datasets
 
-- **WFLW Dataset Download**
-
-​    [Wider Facial Landmarks in-the-wild (WFLW)](https://wywu.github.io/projects/LAB/WFLW.html) is a new proposed face dataset. It contains 10000 faces (7500 for training and 2500 for testing)  with 98 fully manual annotated landmarks.
-
-1. WFLW Training and Testing images [[Google Drive](https://drive.google.com/file/d/1hzBd48JIdWTJSsATBEB_eFVvPL1bx6UC/view?usp=sharing)] [[Baidu Drive](https://pan.baidu.com/s/1paoOpusuyafHY154lqXYrA)]
-2. WFLW  [Face Annotations](https://wywu.github.io/projects/LAB/support/WFLW_annotations.tar.gz)
-3. Unzip above two packages and put them on `./data/WFLW/`
-4. move `Mirror98.txt` to `WFLW/WFLW_annotations`
-
-~~~shell
-$ cd data 
-$ python3 SetPreparation.py
-~~~
-
-#### training & testing
-
-training :
-
-~~~shell
-$ python3 train.py
-~~~
-
-testing:
-
-~~~shell
-$ python3 test.py
-~~~
-
-#### results:
-
-![](./results/example.png)
-
-#### pytorch -> onnx -> ncnn
-
-**Pytorch -> onnx**
-
-~~~~shell
-python3 pytorch2onnx.py
-~~~~
-
-**onnx -> ncnn**
-
-how to build :https://github.com/Tencent/ncnn/wiki/how-to-build
-
-~~~shell
-cd ncnn/build/tools/onnx
-./onnx2ncnn pfld-sim.onnx pfld-sim.param pfld-sim.bin
-~~~
-
-Now you can use **pfld-sim.param** and **pfld-sim.bin** in ncnn:
-
-~~~cpp
-ncnn::Net pfld;
-pfld.load_param("path/to/pfld-sim.param");
-pfld.load_model("path/to/pfld-sim.bin");
-
-cv::Mat img = cv::imread(imagepath, 1);
-ncnn::Mat in = ncnn::Mat::from_pixels_resize(img.data, ncnn::Mat::PIXEL_BGR, img.cols, img.rows, 112, 112);
-const float norm_vals[3] = {1/255.f, 1/255.f, 1/255.f};
-in.substract_mean_normalize(0, norm_vals);
-
-ncnn::Extractor ex = pfld.create_extractor();
-ex.input("input_1", in);
-ncnn::Mat out;
-ex.extract("415", out);
-~~~
-
-#### reference: 
+Euler angles are calculated on the
+[Wider Facial Landmarks in-the-wild (WFLW)](https://wywu.github.io/projects/LAB/WFLW.html) face dataset. It contains 10000 faces (7500 for training and 2500 for testing)  with 98 fully manual annotated landmarks.
+#### Reference: 
 
  PFLD: A Practical Facial Landmark Detector https://arxiv.org/pdf/1902.10859.pdf
-
-Tensorflow Implementation: https://github.com/guoqiangqi/PFLD
-
-#### TODO:
-
-- [x]  Train on CPU and GPU 
-
-- [x] ncnn inference
-- [ ] retrain on datasets AFLW and 300W
-- [ ] fix bugs
-
