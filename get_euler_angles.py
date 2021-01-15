@@ -21,17 +21,17 @@ def load_angle_model(path):
     '''
     Loads a pretrained model
     '''
-    model = models.mobilenet_v2(num_classes=4)
+    model = models.mobilenet_v2(num_classes=3)
     model.load_state_dict(torch.load(path, map_location=device))
     return model
 
-def quat_to_euler(vec):
-    '''
-    Transforms quaternion to euler angle (in degrees)
-    '''
-    rot = Rotation.from_quat(vec.cpu())
-    eulers = rot.as_euler('xyz', degrees=True)
-    return eulers
+# def quat_to_euler(vec):
+#     '''
+#     Transforms quaternion to euler angle (in degrees)
+#     '''
+#     rot = Rotation.from_quat(vec.cpu())
+#     eulers = rot.as_euler('xyz', degrees=True)
+#     return eulers
 
 def run_inference(opt=opt):
     '''
@@ -56,7 +56,7 @@ def run_inference(opt=opt):
             output = model(input_batch)
 
         out = output[0]
-        pitch, yaw, roll = quat_to_euler(out)
+        pitch, yaw, roll = torch.rad2deg(out)
         print(f"Image: {img.split('/')[-1]} has the following angles:\n Pitch: {pitch:.2f}; Yaw: {yaw:.2f}; Roll: {roll:.2f}\n")
         plot_euler_angles(pitch, yaw, roll, img)
 
