@@ -11,6 +11,8 @@ import os
 from scipy.spatial.transform import Rotation
 import detect
 import shutil
+from pfld.utils import *
+from pfld.pfld import PFLDInference, AuxiliaryNet
 from plot_euler_angles import plot_euler_angles
 
 opt = None
@@ -21,19 +23,13 @@ def load_angle_model(path):
     '''
     Loads a pretrained model
     '''
-    model = models.mobilenet_v2(num_classes=3)
-    model.load_state_dict(torch.load(path, map_location=device))
+    checkpoint = torch.load(path, map_location=device)
+    model = PFLDInference().to(device)
+    model.load_state_dict(checkpoint['plfd_backbone'])
     return model
 
-# def quat_to_euler(vec):
-#     '''
-#     Transforms quaternion to euler angle (in degrees)
-#     '''
-#     rot = Rotation.from_quat(vec.cpu())
-#     eulers = rot.as_euler('xyz', degrees=True)
-#     return eulers
 
-def run_inference(opt=opt):
+def run_inference(model, opt=opt):
     '''
     Runs inference on a batch of images or a single image
     '''
@@ -43,22 +39,53 @@ def run_inference(opt=opt):
     else:
         images = [opt.cropped]
     model.eval()
-    for img in images:
-        input_image = Image.open(img)
-        input_tensor = preprocess(input_image)
-        input_batch = input_tensor.unsqueeze(0)
-
+    model.to(device)
+    for img_name in images:
+        img = Image.open(img_name)
+        img = np.asarray(img)
+        img = cv2.resize(img, (112, 112))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        tensor = preprocess(img)
+        batch = tensor.unsqueeze(0)
         if torch.cuda.is_available():
-            input_batch = input_batch.to('cuda')
-            model.to('cuda')
+            batch = batch.to('cuda')
 
         with torch.no_grad():
-            output = model(input_batch)
+            _, landmarks = model(batch)
 
-        out = output[0]
-        pitch, yaw, roll = torch.rad2deg(out)
-        print(f"Image: {img.split('/')[-1]} has the following angles:\n Pitch: {pitch:.2f}; Yaw: {yaw:.2f}; Roll: {roll:.2f}\n")
-        plot_euler_angles(pitch, yaw, roll, img)
+        pre_landmark = landmarks[0]
+        pre_landmark = pre_landmark.cpu().detach().numpy().reshape(-1, 2) * [112, 112]
+        point_dict = {}
+        i = 0
+        for (x,y) in pre_landmark.astype(np.float32):
+            point_dict[f'{i}'] = [x,y]
+            i += 1
+
+        # yaw
+        point1 = [get_num(point_dict, 1, 0), get_num(point_dict, 1, 1)]
+        point31 = [get_num(point_dict, 31, 0), get_num(point_dict, 31, 1)]
+        point51 = [get_num(point_dict, 51, 0), get_num(point_dict, 51, 1)]
+        crossover51 = point_line(point51, [point1[0], point1[1], point31[0], point31[1]])
+        yaw_mean = point_point(point1, point31) / 2
+        yaw_right = point_point(point1, crossover51)
+        yaw = (yaw_mean - yaw_right) / yaw_mean
+        yaw = yaw * 71.58 + 0.7037
+
+        # pitch
+        pitch_dis = point_point(point51, crossover51)
+        if point51[1] < crossover51[1]:
+            pitch_dis = -pitch_dis
+        pitch = 1.497 * pitch_dis + 18.97
+
+        # roll
+        roll_tan = abs(get_num(point_dict,60,1) - get_num(point_dict,72,1)) / abs(get_num(point_dict,60,0) - get_num(point_dict,72,0))
+        roll = math.atan(roll_tan)
+        roll = math.degrees(roll)
+        if get_num(point_dict, 60, 1) > get_num(point_dict, 72, 1):
+            roll = -roll
+
+        print(f"Image: {img_name.split('/')[-1]} has the following angles:\n Pitch: {pitch:.2f}; Yaw: {yaw:.2f}; Roll: {roll:.2f}\n")
+        plot_euler_angles(pitch, yaw, roll, img_name)
 
 
 if __name__ == '__main__':
@@ -68,7 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('--cropped', type=str, default='./data/cropped', help='cropped images')  # file or directory
     opt = parser.parse_args()
     detect.run(source=opt.source)
-    run_inference(opt=opt)
+    run_inference(model=model, opt=opt)
     if os.path.exists('./data/cropped'):
         shutil.rmtree('./data/cropped')  # delete output folder
     os.makedirs('./data/cropped')  # make new output folders
